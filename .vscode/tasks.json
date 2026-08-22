@@ -1,0 +1,47 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Helpdesk: Start (python start.py)",
+      "type": "process",
+      "command": "python",
+      "args": ["start.py"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "group": { "kind": "build", "isDefault": true },
+      "detail": "Starts the database, backend (:8000) and UI (:5280). No PowerShell required. Open http://localhost:5280"
+    },
+    {
+      "label": "Helpdesk: Verify (python scripts/verify.py)",
+      "type": "process",
+      "command": "python",
+      "args": ["scripts/verify.py"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "group": { "kind": "test", "isDefault": true },
+      "detail": "Runs the full PASS/FAIL health check across every component."
+    },
+    {
+      "label": "Helpdesk: Seed demo data",
+      "type": "process",
+      "command": "python",
+      "args": ["start.py", "--seed-only"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "detail": "Creates roles, categories, the 4 demo users and the sample KB documents (idempotent)."
+    },
+    {
+      "label": "Helpdesk: Stop (python start.py --stop)",
+      "type": "process",
+      "command": "python",
+      "args": ["start.py", "--stop"],
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "detail": "Stops the backend, frontend and bundled PostgreSQL."
+    }
+  ]
+}

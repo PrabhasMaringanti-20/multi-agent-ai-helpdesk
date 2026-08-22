@@ -1,0 +1,89 @@
+# =============================================================================
+# Enterprise AI Helpdesk - .gitignore
+# =============================================================================
+
+# ---- Secrets / environment (never commit a real key) ----
+.env
+*.env
+.env.*
+!.env.example
+backend/.env
+!backend/.env.example
+frontend/.env
+!frontend/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# ---- Node / frontend ----
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+coverage/
+.nyc_output/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Runtime logs / local data stores ----
+logs/
+*.log
+*.sqlite
+*.sqlite3
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+postgres_data/
+chroma_data/
+chroma/
+uploads/
+
+# ---- Data files (never commit real operational data) ----
+*.xlsx
+*.xls
+*.csv
+*.parquet
+!docs/**/*.csv
+
+# ---- Local scratch ----
+tmp/
+temp/
+scratch/
+
+# ---- Editor / tooling / OS ----
+.idea/
+.vs/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+.claude/
+
+# ---- Keep VS Code shared tasks, ignore user-local settings ----
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json

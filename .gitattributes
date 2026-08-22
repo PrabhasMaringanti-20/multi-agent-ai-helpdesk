@@ -1,0 +1,33 @@
+# Normalize line endings so the repo is identical on Windows, macOS, and Linux.
+* text=auto eol=lf
+
+# Shell scripts and Dockerfiles must keep LF or they break inside containers.
+*.sh      text eol=lf
+Dockerfile text eol=lf
+entrypoint.sh text eol=lf
+
+# Treat these as text so diffs are readable.
+*.py   text
+*.ts   text
+*.tsx  text
+*.json text
+*.yml  text
+*.yaml text
+*.md   text
+*.svg  text
+
+# Binary assets — never diff or normalize.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+
+# Keep generated/vendored files out of language stats and diffs.
+frontend/package-lock.json  -diff linguist-generated=true
+backend/scripts/demo_kb_data.py linguist-generated=true
+docs/CODE_WALKTHROUGH.md    linguist-documentation=true
+docs/ARCHITECTURE.md        linguist-documentation=true

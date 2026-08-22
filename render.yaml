@@ -1,0 +1,49 @@
+services:
+  - type: web
+    name: ai-helpdesk-api
+    runtime: docker
+    region: oregon
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: POSTGRES_HOST
+        sync: false
+      - key: POSTGRES_PORT
+        value: "5432"
+      - key: POSTGRES_USER
+        sync: false
+      - key: POSTGRES_PASSWORD
+        sync: false
+      - key: POSTGRES_DB
+        value: helpdesk
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: LLM_PROVIDER
+        value: fake
+      - key: EMBEDDING_PROVIDER
+        value: fake
+      - key: RATE_LIMIT_ENABLED
+        value: "false"
+      - key: REDIS_URL
+        value: ""
+      - key: CELERY_BROKER_URL
+        value: ""
+      - key: CELERY_RESULT_BACKEND
+        value: ""
+      - key: CHROMA_HOST
+        value: ""
+      - key: BOOTSTRAP_DEMO
+        value: "true"
+      - key: BOOTSTRAP_ORG_SLUG
+        value: acme
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        value: admin@acme.com
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false
+      - key: APP_ENV
+        value: production

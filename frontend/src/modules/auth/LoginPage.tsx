@@ -24,7 +24,8 @@ export function LoginPage() {
   const fillCredentials = (demoEmail: string) => {
     setOrgSlug("acme");
     setEmail(demoEmail);
-    setPassword("ChangeMe123!");
+    // Let the user type their secure Render password manually
+    setPassword("");
   };
 
   return (
@@ -66,7 +67,7 @@ export function LoginPage() {
             <button onClick={() => fillCredentials('sme@acme.com')} className="w-full text-left px-3 py-2 rounded bg-white hover:bg-blue-100 border border-blue-200 transition-colors">
               <span className="font-bold">Subject Matter Expert:</span> sme@acme.com
             </button>
-            <p className="pt-2 text-center text-blue-700 italic">Password for all accounts: ChangeMe123!</p>
+            <p className="pt-2 text-center text-blue-700 italic">Use the secure password you set in Render!</p>
           </div>
         </div>
       </div>

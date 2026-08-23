@@ -1,14 +1,18 @@
-"""Gemini LLM adapter (google-generativeai). SDK imported lazily.
+"""Gemini LLM adapter (google-genai, the unified SDK). SDK imported lazily.
 
-Uses the REST transport + ``truststore`` (OS trust store) so it works behind
-corporate TLS-inspection proxies. The engine streams the final answer itself
-(the synthesizer calls ``generate``), so the REST-only sync path is sufficient;
-``_astream`` emits the full completion as one chunk if ever called directly.
+``google-generativeai`` (the SDK this adapter used previously) was retired by
+Google - all support for that package ended 2025-11-30. This adapter uses the
+current unified SDK (``google-genai``) instead: ``from google import genai``,
+``genai.Client(api_key=...)``, and the async surface under ``client.aio``.
+
+Uses ``truststore`` (OS trust store) so it works behind corporate
+TLS-inspection proxies. The engine streams the final answer itself (the
+synthesizer calls ``generate``), so the non-streaming path is what actually
+matters; ``_astream`` uses the SDK's real async streaming call.
 """
 
 from __future__ import annotations
 
-import asyncio
 from collections.abc import AsyncIterator
 from typing import Any
 
@@ -21,15 +25,29 @@ def _to_gemini(messages: list[ChatMessage]) -> tuple[str | None, list[dict[str, 
     system_parts = [m.content for m in messages if m.role == "system"]
     system = "\n\n".join(system_parts) or None
     contents = [
-        {"role": "model" if m.role == "assistant" else "user", "parts": [m.content]}
+        {"role": "model" if m.role == "assistant" else "user", "parts": [{"text": m.content}]}
         for m in messages
         if m.role in ("user", "assistant")
     ]
     return system, contents
 
 
+def _extract_text(response: Any) -> str:
+    text = getattr(response, "text", None)
+    if text:
+        return text
+    collected: list[str] = []
+    for candidate in getattr(response, "candidates", None) or []:
+        content = getattr(candidate, "content", None)
+        for part in getattr(content, "parts", None) or []:
+            chunk = getattr(part, "text", None)
+            if chunk:
+                collected.append(chunk)
+    return "".join(collected)
+
+
 class GeminiLLMProvider(BaseLLMProvider):
-    def _client(self) -> Any:
+    def _client(self) -> tuple[Any, Any]:
         settings = get_settings()
         api_key = settings.GEMINI_API_KEY.get_secret_value()
         if not api_key:
@@ -42,32 +60,30 @@ class GeminiLLMProvider(BaseLLMProvider):
         except Exception:  # noqa: BLE001 - best-effort; fall back to certifi
             pass
         try:
-            import google.generativeai as genai
+            from google import genai
+            from google.genai import types
         except ImportError as exc:  # pragma: no cover
-            raise ProviderError("google-generativeai is not installed.") from exc
-        # REST transport respects Python's ssl (and thus truststore); gRPC does not.
-        genai.configure(api_key=api_key, transport="rest")
-        return genai
+            raise ProviderError("google-genai is not installed.") from exc
+        return genai.Client(api_key=api_key), types
 
-    def _generation_config(self, kwargs: dict[str, Any]) -> dict[str, Any]:
-        return {
-            "temperature": kwargs.get("temperature", self.temperature),
-            "max_output_tokens": kwargs.get("max_output_tokens", self.max_output_tokens),
-        }
+    def _generation_config(self, types: Any, system: str | None, kwargs: dict[str, Any]) -> Any:
+        return types.GenerateContentConfig(
+            system_instruction=system,
+            temperature=kwargs.get("temperature", self.temperature),
+            max_output_tokens=kwargs.get("max_output_tokens", self.max_output_tokens),
+        )
 
     async def _acomplete(self, messages: list[ChatMessage], **kwargs: Any) -> LLMResult:
-        genai = self._client()
+        client, types = self._client()
         system, contents = _to_gemini(messages)
-        model = genai.GenerativeModel(self.model_id, system_instruction=system)
-        config = self._generation_config(kwargs)
+        config = self._generation_config(types, system, kwargs)
 
-        def _call() -> Any:
-            return model.generate_content(contents, generation_config=config)
-
-        response = await asyncio.to_thread(_call)
+        response = await client.aio.models.generate_content(
+            model=self.model_id, contents=contents, config=config
+        )
         usage = getattr(response, "usage_metadata", None)
         return LLMResult(
-            text=response.text or "",
+            text=_extract_text(response),
             model=self.model_id,
             tier=self.tier,
             finish_reason="stop",
@@ -79,8 +95,17 @@ class GeminiLLMProvider(BaseLLMProvider):
         )
 
     async def _astream(self, messages: list[ChatMessage], **kwargs: Any) -> AsyncIterator[str]:
-        result = await self._acomplete(messages, **kwargs)
-        yield result.text
+        client, types = self._client()
+        system, contents = _to_gemini(messages)
+        config = self._generation_config(types, system, kwargs)
+
+        stream = await client.aio.models.generate_content_stream(
+            model=self.model_id, contents=contents, config=config
+        )
+        async for chunk in stream:
+            text = _extract_text(chunk)
+            if text:
+                yield text
 
 
 __all__ = ["GeminiLLMProvider"]

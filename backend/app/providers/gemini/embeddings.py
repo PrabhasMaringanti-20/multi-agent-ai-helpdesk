@@ -1,8 +1,11 @@
-"""Gemini embedding adapter (google-generativeai). SDK imported lazily."""
+"""Gemini embedding adapter (google-genai, the unified SDK). SDK imported lazily.
+
+``google-generativeai`` (used previously) was retired by Google - all support
+ended 2025-11-30. This adapter uses the current unified SDK instead.
+"""
 
 from __future__ import annotations
 
-import asyncio
 import math
 from typing import Any
 
@@ -12,7 +15,7 @@ from app.providers.base import BaseEmbeddingProvider
 
 
 class GeminiEmbeddingProvider(BaseEmbeddingProvider):
-    def _client(self) -> Any:
+    def _client(self) -> tuple[Any, Any]:
         settings = get_settings()
         api_key = settings.GEMINI_API_KEY.get_secret_value()
         if not api_key:
@@ -24,29 +27,32 @@ class GeminiEmbeddingProvider(BaseEmbeddingProvider):
         except Exception:  # noqa: BLE001
             pass
         try:
-            import google.generativeai as genai
+            from google import genai
+            from google.genai import types
         except ImportError as exc:  # pragma: no cover
-            raise ProviderError("google-generativeai is not installed.") from exc
-        genai.configure(api_key=api_key, transport="rest")
-        return genai
+            raise ProviderError("google-genai is not installed.") from exc
+        return genai.Client(api_key=api_key), types
 
     async def _aembed(self, texts: list[str]) -> list[list[float]]:
-        genai = self._client()
+        client, types = self._client()
         dim = self.dim
 
-        def _embed_one(text: str) -> list[float]:
-            # gemini-embedding-001 defaults to 3072 dims; request our configured
-            # dimensionality (EMBEDDING_DIM) so vectors match the store/schema.
-            result = genai.embed_content(
-                model=self.model_id, content=text, output_dimensionality=dim
-            )
-            vec = [float(x) for x in result["embedding"]]
+        # gemini-embedding-001 defaults to 3072 dims; request our configured
+        # dimensionality (EMBEDDING_DIM) so vectors match the store/schema.
+        response = await client.aio.models.embed_content(
+            model=self.model_id,
+            contents=texts,
+            config=types.EmbedContentConfig(output_dimensionality=dim),
+        )
+
+        vectors: list[list[float]] = []
+        for embedding in response.embeddings:
+            vec = [float(x) for x in embedding.values]
             # Reduced-dimensionality Matryoshka embeddings are not unit-normalized;
             # normalize so cosine / inner-product similarity is well-scaled.
             norm = math.sqrt(sum(x * x for x in vec)) or 1.0
-            return [x / norm for x in vec]
-
-        return await asyncio.gather(*(asyncio.to_thread(_embed_one, t) for t in texts))
+            vectors.append([x / norm for x in vec])
+        return vectors
 
 
 __all__ = ["GeminiEmbeddingProvider"]

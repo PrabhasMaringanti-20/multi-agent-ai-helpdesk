@@ -2508,7 +2508,7 @@ Module-level state is the key concept here: a single `_accountant = TokenAccount
 ### `providers/gemini/llm.py`
 
 **Purpose**
-Concrete `LLMProvider` for Google Gemini via the `google-generativeai` SDK, with special handling to work behind corporate TLS-inspection proxies.
+Concrete `LLMProvider` for Google Gemini via `google-genai`, the current unified SDK, with special handling to work behind corporate TLS-inspection proxies. (This adapter previously used `google-generativeai`; that package's support ended 2025-11-30, so it was migrated to `google-genai` — same shape as `ai-idea-validator`'s adapter.)
 
 **How it works**
 `GeminiLLMProvider` subclasses `BaseLLMProvider`, so it only implements the raw calls; all resilience is inherited.
@@ -2516,14 +2516,14 @@ Concrete `LLMProvider` for Google Gemini via the `google-generativeai` SDK, with
 - `_to_gemini(messages)` is a module-level translator from the neutral `ChatMessage` list to Gemini's format. It concatenates all `system` messages into a single `system_instruction` string, and maps the rest into Gemini's `contents` list, where role `assistant` becomes Gemini's `"model"` and everything else becomes `"user"`:
   ```python
   contents = [
-      {"role": "model" if m.role == "assistant" else "user", "parts": [m.content]}
+      {"role": "model" if m.role == "assistant" else "user", "parts": [{"text": m.content}]}
       for m in messages if m.role in ("user", "assistant")
   ]
   ```
-- `_client()` lazily configures the SDK. It reads the key with `settings.GEMINI_API_KEY.get_secret_value()` (a Pydantic `SecretStr`, so the key never prints accidentally) and raises `ProviderError` if it's missing. It then best-effort calls `truststore.inject_into_ssl()` so Python uses the OS certificate store (this is what lets it survive corporate TLS interception), swallowing any failure. It imports `google.generativeai` **inside the method** (lazy import) so the SDK is only required if Gemini is actually used, and configures `transport="rest"` — the comment notes REST honors Python's SSL/truststore whereas gRPC does not.
-- `_generation_config` merges per-call `kwargs` over the instance defaults for `temperature` and `max_output_tokens`.
-- `_acomplete` builds a `GenerativeModel` with the system instruction, then runs the **synchronous** `model.generate_content(...)` inside `asyncio.to_thread(...)`. This is important: the Gemini REST call is blocking, and wrapping it in a worker thread keeps the async event loop from stalling. It reads `usage_metadata` defensively with `getattr(..., 0) or 0` and returns an `LLMResult`.
-- `_astream` does **not** truly stream — it awaits `_acomplete` and yields the whole text as one chunk. The module docstring explains this is fine because the engine's synthesizer calls `generate`, not `stream`, so the REST sync path suffices.
+- `_client()` lazily builds the SDK client. It reads the key with `settings.GEMINI_API_KEY.get_secret_value()` (a Pydantic `SecretStr`, so the key never prints accidentally) and raises `ProviderError` if it's missing. It then best-effort calls `truststore.inject_into_ssl()` so Python uses the OS certificate store (this is what lets it survive corporate TLS interception), swallowing any failure. It imports `google.genai` **inside the method** (lazy import) so the SDK is only required if Gemini is actually used, and returns `genai.Client(api_key=...)` plus the `types` module for building request config.
+- `_generation_config` builds a `types.GenerateContentConfig` merging per-call `kwargs` over the instance defaults for `temperature` and `max_output_tokens`.
+- `_acomplete` awaits `client.aio.models.generate_content(...)` directly — the SDK's async surface talks HTTP under the hood, so no thread offload is needed. It reads `usage_metadata` defensively with `getattr(..., 0) or 0` and returns an `LLMResult`.
+- `_astream` now streams for real via `client.aio.models.generate_content_stream(...)`, yielding each chunk's text as it arrives.
 
 **Connects to** `BaseLLMProvider` and the value objects in `base.py`; `app.core.config` and `app.core.exceptions`; instantiated by `registry.py`.
 
@@ -2535,11 +2535,7 @@ Concrete `LLMProvider` for Google Gemini via the `google-generativeai` SDK, with
 Concrete `EmbeddingProvider` for Gemini embeddings.
 
 **How it works**
-`GeminiEmbeddingProvider(BaseEmbeddingProvider)` implements only `_aembed`. Its `_client()` is identical in spirit to the LLM adapter's (secret key, truststore injection, lazy import, REST transport). `_aembed` embeds each text with the blocking `genai.embed_content(...)` call, wrapping each in `asyncio.to_thread`, and runs them concurrently via `asyncio.gather`:
-```python
-return await asyncio.gather(*(asyncio.to_thread(_embed_one, t) for t in texts))
-```
-So a batch of N texts fires N embedding calls in parallel worker threads rather than serially. Each `_embed_one` returns `list(result["embedding"])`.
+`GeminiEmbeddingProvider(BaseEmbeddingProvider)` implements only `_aembed`. Its `_client()` is identical in spirit to the LLM adapter's (secret key, truststore injection, lazy import via `google.genai`). `_aembed` sends the whole batch in a single `client.aio.models.embed_content(model=..., contents=texts, config=types.EmbedContentConfig(output_dimensionality=dim))` call, then L2-normalizes each returned vector (reduced-dimensionality Matryoshka embeddings from `gemini-embedding-001` are not unit-normalized, so cosine/inner-product similarity needs this).
 
 **Connects to** `BaseEmbeddingProvider`; built by `registry.py` when `EMBEDDING_PROVIDER=gemini`.
 

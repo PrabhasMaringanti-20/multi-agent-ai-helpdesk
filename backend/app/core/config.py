@@ -95,8 +95,11 @@ class Settings(BaseSettings):
     LLM_FALLBACK_PROVIDERS: str = ""
     EMBEDDING_PROVIDER: str = "gemini"  # gemini | openai | fake
     GEMINI_API_KEY: SecretStr = SecretStr("")
-    LLM_SMALL_MODEL: str = "gemini-1.5-flash"
-    LLM_LARGE_MODEL: str = "gemini-1.5-pro"
+    # gemini-1.5-flash / gemini-1.5-pro are retired (404 "not found" as of
+    # 2026-08, confirmed live against the Gemini API). The "-latest" aliases
+    # never go stale the same way pinned generations do.
+    LLM_SMALL_MODEL: str = "gemini-flash-lite-latest"
+    LLM_LARGE_MODEL: str = "gemini-flash-latest"
     EMBEDDING_MODEL: str = "gemini-embedding-001"
     EMBEDDING_DIM: int = 768
 

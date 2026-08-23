@@ -72,8 +72,12 @@ services:
         value: acme
       - key: BOOTSTRAP_ADMIN_EMAIL
         value: admin@acme.com
+      # Intentionally a plain value, not sync:false: this is a portfolio demo
+      # with seeded fake data, and the password is displayed in the login UI
+      # (frontend/src/modules/auth/LoginPage.tsx) so visitors can try it -
+      # keep the two in sync if this ever changes.
       - key: BOOTSTRAP_ADMIN_PASSWORD
-        sync: false
+        value: "HelpdeskDemo2026!"
 
 databases:
   - name: helpdesk-db

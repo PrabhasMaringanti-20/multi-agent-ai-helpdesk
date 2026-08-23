@@ -6,6 +6,12 @@ import { Button } from "@/shared/ui/Button";
 import { Card } from "@/shared/ui/Card";
 import { Input } from "@/shared/ui/Input";
 
+// Public on purpose: this is a portfolio demo, seeded with fake data, so the
+// credentials are meant to be shared rather than kept secret. Kept in sync
+// with BOOTSTRAP_ADMIN_PASSWORD in render.yaml, which all 3 demo accounts
+// are (re)synced to on every deploy (see backend/scripts/bootstrap_admin.py).
+const DEMO_PASSWORD = "HelpdeskDemo2026!";
+
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -20,12 +26,11 @@ export function LoginPage() {
       { onSuccess: () => navigate("/", { replace: true }) },
     );
   };
-  
+
   const fillCredentials = (demoEmail: string) => {
     setOrgSlug("acme");
     setEmail(demoEmail);
-    // Let the user type their secure Render password manually
-    setPassword("");
+    setPassword(DEMO_PASSWORD);
   };
 
   return (
@@ -67,7 +72,10 @@ export function LoginPage() {
             <button onClick={() => fillCredentials('sme@acme.com')} className="w-full text-left px-3 py-2 rounded bg-white hover:bg-blue-100 border border-blue-200 transition-colors">
               <span className="font-bold">Subject Matter Expert:</span> sme@acme.com
             </button>
-            <p className="pt-2 text-center text-blue-700 italic">Use the secure password you set in Render!</p>
+            <p className="pt-2 text-center text-blue-700">
+              Password (all accounts): <span className="font-mono font-bold">{DEMO_PASSWORD}</span>
+            </p>
+            <p className="text-center text-blue-700 italic">Click a role above to autofill it, or type it in yourself.</p>
           </div>
         </div>
       </div>

@@ -54,8 +54,8 @@ async def _run() -> None:
             
         users_to_create = [
             (email, password, "Demo Admin", role_map[RoleKey.ADMIN.value].id),
-            ("support@acme.com", "ChangeMe123!", "Demo Support", role_map[RoleKey.SUPPORT_ENGINEER.value].id),
-            ("sme@acme.com", "ChangeMe123!", "Demo SME", role_map[RoleKey.SME_REVIEWER.value].id),
+            ("support@acme.com", password, "Demo Support", role_map[RoleKey.SUPPORT_ENGINEER.value].id),
+            ("sme@acme.com", password, "Demo SME", role_map[RoleKey.SME_REVIEWER.value].id),
         ]
         
         for u_email, u_password, u_name, u_role_id in users_to_create:
@@ -75,7 +75,9 @@ async def _run() -> None:
                 )
                 print(f"[bootstrap] created user '{u_email}'")
             else:
-                print(f"[bootstrap] user '{u_email}' already exists")
+                # Always sync demo account passwords to the current env var
+                existing.hashed_password = hash_password(u_password)
+                print(f"[bootstrap] updated password for existing user '{u_email}'")
 
         await session.commit()
 

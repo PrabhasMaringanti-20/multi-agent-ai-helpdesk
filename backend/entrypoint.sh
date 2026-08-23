@@ -59,6 +59,8 @@ case "${ROLE}" in
       echo "Seeding demo organization + admin user..."
       python scripts/bootstrap_admin.py || echo "bootstrap skipped (non-fatal)"
     fi
+    echo "Starting Celery worker in background for free-tier compatibility..."
+    celery -A app.workers.queue.celery_app worker --loglevel=INFO --concurrency="${CELERY_CONCURRENCY:-2}" &
     echo "Starting API..."
     exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'
     ;;

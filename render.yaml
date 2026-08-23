@@ -36,7 +36,7 @@ services:
       - key: POSTGRES_DB
         fromDatabase:
           name: helpdesk-db
-        generateValue: true
+          property: database
       - key: REDIS_URL
         fromService:
           type: redis
@@ -53,7 +53,7 @@ services:
           name: helpdesk-redis
           property: connectionString
       - key: SECRET_KEY
-        value: "ChangeMe123!"
+        generateValue: true
       - key: GEMINI_API_KEY
         sync: false
       - key: LLM_PROVIDER

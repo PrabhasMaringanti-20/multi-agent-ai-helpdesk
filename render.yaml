@@ -1,4 +1,10 @@
 services:
+  - type: redis
+    name: helpdesk-redis
+    plan: free
+    region: oregon
+    ipAllowList: []
+
   - type: web
     name: ai-helpdesk-api
     runtime: docker
@@ -31,6 +37,21 @@ services:
         fromDatabase:
           name: helpdesk-db
           property: database
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: helpdesk-redis
+          property: connectionString
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: helpdesk-redis
+          property: connectionString
+      - key: CELERY_RESULT_BACKEND
+        fromService:
+          type: redis
+          name: helpdesk-redis
+          property: connectionString
       - key: SECRET_KEY
         generateValue: true
       - key: GEMINI_API_KEY
@@ -39,12 +60,6 @@ services:
         value: fake
       - key: EMBEDDING_PROVIDER
         value: fake
-      - key: REDIS_URL
-        value: ""
-      - key: CELERY_BROKER_URL
-        value: ""
-      - key: CELERY_RESULT_BACKEND
-        value: ""
       - key: CORS_ORIGINS
         value: "*"
       - key: APP_ENV

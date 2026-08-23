@@ -64,6 +64,14 @@ services:
         value: "*"
       - key: APP_ENV
         value: production
+      - key: BOOTSTRAP_DEMO
+        value: "true"
+      - key: BOOTSTRAP_ORG_SLUG
+        value: acme
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        value: admin@acme.com
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        generateValue: true
 
 databases:
   - name: helpdesk-db

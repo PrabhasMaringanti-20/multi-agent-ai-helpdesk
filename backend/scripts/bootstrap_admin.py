@@ -45,30 +45,37 @@ async def _run() -> None:
         else:
             print(f"[bootstrap] organization '{org_slug}' already exists")
 
-        admin_role = (
-            await session.execute(select(Role).where(Role.key == RoleKey.ADMIN.value))
-        ).scalar_one_or_none()
-        if admin_role is None:
-            print("[bootstrap] ERROR: roles not seeded — run 'alembic upgrade head' first")
+        roles = await session.execute(select(Role).where(Role.key.in_([RoleKey.ADMIN.value, RoleKey.SUPPORT_ENGINEER.value, RoleKey.SME_REVIEWER.value])))
+        role_map = {r.key: r for r in roles.scalars().all()}
+        
+        if RoleKey.ADMIN.value not in role_map:
+            print("[bootstrap] ERROR: roles not seeded")
             return
-
-        existing = (
-            await session.execute(select(User).where(User.org_id == org.id, User.email == email))
-        ).scalar_one_or_none()
-        if existing is None:
-            session.add(
-                User(
-                    org_id=org.id,
-                    email=email,
-                    hashed_password=hash_password(password),
-                    full_name="Demo Admin",
-                    role_id=admin_role.id,
-                    is_active=True,
+            
+        users_to_create = [
+            (email, password, "Demo Admin", role_map[RoleKey.ADMIN.value].id),
+            ("support@acme.com", "ChangeMe123!", "Demo Support", role_map[RoleKey.SUPPORT_ENGINEER.value].id),
+            ("sme@acme.com", "ChangeMe123!", "Demo SME", role_map[RoleKey.SME_REVIEWER.value].id),
+        ]
+        
+        for u_email, u_password, u_name, u_role_id in users_to_create:
+            existing = (
+                await session.execute(select(User).where(User.org_id == org.id, User.email == u_email))
+            ).scalar_one_or_none()
+            if existing is None:
+                session.add(
+                    User(
+                        org_id=org.id,
+                        email=u_email,
+                        hashed_password=hash_password(u_password),
+                        full_name=u_name,
+                        role_id=u_role_id,
+                        is_active=True,
+                    )
                 )
-            )
-            print(f"[bootstrap] created admin user '{email}'")
-        else:
-            print(f"[bootstrap] admin user '{email}' already exists")
+                print(f"[bootstrap] created user '{u_email}'")
+            else:
+                print(f"[bootstrap] user '{u_email}' already exists")
 
         await session.commit()
 

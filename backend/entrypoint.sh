@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+export REDIS_URL="${REDIS_URL//valkey:\/\//rediss:\/\/}"
+export CELERY_BROKER_URL="${CELERY_BROKER_URL//valkey:\/\//rediss:\/\/}"
+export CELERY_RESULT_BACKEND="${CELERY_RESULT_BACKEND//valkey:\/\//rediss:\/\/}"
 # Container entrypoint. Waits for infrastructure, then starts the requested role.
 #   api    -> run migrations, then serve the FastAPI app (uvicorn)
 #   worker -> Celery worker (learning / ingestion / notification / analytics tasks)

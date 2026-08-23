@@ -20,9 +20,15 @@ export function LoginPage() {
       { onSuccess: () => navigate("/", { replace: true }) },
     );
   };
+  
+  const fillCredentials = (demoEmail: string) => {
+    setOrgSlug("acme");
+    setEmail(demoEmail);
+    setPassword("ChangeMe123!");
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-100 px-4 py-8">
       <div className="w-full max-w-md">
         <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-slate-900">Enterprise AI Helpdesk</h1>
@@ -47,6 +53,22 @@ export function LoginPage() {
             </button>
           </p>
         </Card>
+        
+        <div className="mt-6 rounded-md bg-blue-50 p-4 border border-blue-100">
+          <h3 className="text-sm font-semibold text-blue-800 mb-2">Portfolio Demo Credentials:</h3>
+          <div className="space-y-2 text-xs text-blue-900">
+            <button onClick={() => fillCredentials('admin@acme.com')} className="w-full text-left px-3 py-2 rounded bg-white hover:bg-blue-100 border border-blue-200 transition-colors">
+              <span className="font-bold">Admin:</span> admin@acme.com
+            </button>
+            <button onClick={() => fillCredentials('support@acme.com')} className="w-full text-left px-3 py-2 rounded bg-white hover:bg-blue-100 border border-blue-200 transition-colors">
+              <span className="font-bold">Support Engineer:</span> support@acme.com
+            </button>
+            <button onClick={() => fillCredentials('sme@acme.com')} className="w-full text-left px-3 py-2 rounded bg-white hover:bg-blue-100 border border-blue-200 transition-colors">
+              <span className="font-bold">Subject Matter Expert:</span> sme@acme.com
+            </button>
+            <p className="pt-2 text-center text-blue-700 italic">Password for all accounts: ChangeMe123!</p>
+          </div>
+        </div>
       </div>
     </div>
   );

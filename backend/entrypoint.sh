@@ -36,7 +36,7 @@ else:
 # --- Redis ---
 import redis  # noqa: E402
 
-client = redis.from_url(settings.REDIS_URL)
+client = redis.from_url(settings.REDIS_URL.replace("valkey://", "redis://"))
 for attempt in range(30):
     try:
         client.ping()

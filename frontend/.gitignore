@@ -4,3 +4,6 @@ dist/
 *.local
 .vite/
 npm-debug.log*
+
+.vercel
+.env*

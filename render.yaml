@@ -53,7 +53,7 @@ services:
           name: helpdesk-redis
           property: connectionString
       - key: SECRET_KEY
-        generateValue: true
+        value: "demo-secret-key-that-is-at-least-32-characters-long"
       - key: GEMINI_API_KEY
         sync: false
       - key: LLM_PROVIDER

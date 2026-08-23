@@ -61,7 +61,7 @@ services:
       - key: EMBEDDING_PROVIDER
         value: gemini
       - key: CORS_ORIGINS
-        value: "*"
+        value: "https://multi-agent-helpdesk.vercel.app"
       - key: APP_ENV
         value: production
       - key: BOOTSTRAP_DEMO

@@ -172,6 +172,15 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in candidate.split(",") if origin.strip()]
         return value
 
+    @field_validator("REDIS_URL", "CELERY_BROKER_URL", "CELERY_RESULT_BACKEND", mode="before")
+    @classmethod
+    def _normalize_redis_url(cls, value: Any) -> Any:
+        """Ensure Render's valkey:// scheme is converted to redis:// for Python clients."""
+        if isinstance(value, str):
+            value = value.replace("valkeys://", "rediss://")
+            value = value.replace("valkey://", "redis://")
+        return value
+
     @model_validator(mode="after")
     def _enforce_production_safety(self) -> Settings:
         if self.APP_ENV != Environment.PRODUCTION:

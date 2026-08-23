@@ -66,6 +66,8 @@ services:
         value: production
       - key: BOOTSTRAP_DEMO
         value: "true"
+      - key: SEED_KB_DEMO
+        value: "true"
       - key: BOOTSTRAP_ORG_SLUG
         value: acme
       - key: BOOTSTRAP_ADMIN_EMAIL

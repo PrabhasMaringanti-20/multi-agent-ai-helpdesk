@@ -59,6 +59,10 @@ case "${ROLE}" in
       echo "Seeding demo organization + admin user..."
       python scripts/bootstrap_admin.py || echo "bootstrap skipped (non-fatal)"
     fi
+    if [ "${SEED_KB_DEMO:-false}" = "true" ]; then
+      echo "Publishing + embedding demo knowledge base articles..."
+      python scripts/seed_kb.py || echo "KB seed skipped (non-fatal)"
+    fi
     echo "Starting Celery worker in background for free-tier compatibility..."
     celery -A app.workers.queue.celery_app worker --loglevel=INFO --concurrency="${CELERY_CONCURRENCY:-2}" &
     echo "Starting API..."

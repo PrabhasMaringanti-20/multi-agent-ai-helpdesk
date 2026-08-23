@@ -25,7 +25,7 @@ def test_liveness() -> None:
 def _all_healthy(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("app.api.health.check_database", _healthy)
     monkeypatch.setattr("app.api.health.check_redis", _healthy)
-    monkeypatch.setattr("app.api.health.check_chroma", _healthy)
+    monkeypatch.setattr("app.api.health.check_vector_store", _healthy)
     monkeypatch.setattr("app.api.health.check_celery", lambda: True)
     monkeypatch.setattr("app.api.health.providers_configured", lambda: True)
 
@@ -40,7 +40,7 @@ def test_readiness_all_healthy(monkeypatch: pytest.MonkeyPatch) -> None:
     assert body["checks"] == {
         "database": True,
         "redis": True,
-        "chroma": True,
+        "vector_store": True,
         "celery": True,
         "providers": True,
     }
@@ -50,10 +50,10 @@ def test_readiness_reports_503_when_dependency_down(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _all_healthy(monkeypatch)
-    monkeypatch.setattr("app.api.health.check_chroma", _unhealthy)
+    monkeypatch.setattr("app.api.health.check_vector_store", _unhealthy)
     with TestClient(app) as client:
         response = client.get("/health/ready")
     assert response.status_code == 503
     body = response.json()
     assert body["status"] == "not_ready"
-    assert body["checks"]["chroma"] is False
+    assert body["checks"]["vector_store"] is False

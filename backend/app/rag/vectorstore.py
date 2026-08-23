@@ -164,10 +164,36 @@ async def check_chroma() -> bool:
         return False
 
 
+async def check_vector_store() -> bool:
+    """Readiness check for whichever backend is actually configured.
+
+    ``check_chroma`` used to run unconditionally here even when
+    ``VECTOR_STORE_BACKEND=pg`` (the default - see ``get_vector_store``), so
+    ``/health/ready`` would hang trying to reach a Chroma server that was never
+    part of the deployment. This checks the store that's actually in use.
+    """
+    backend = (getattr(get_settings(), "VECTOR_STORE_BACKEND", "pg") or "pg").lower()
+    if backend != "pg":
+        return await check_chroma()
+    try:
+        from sqlalchemy import select
+
+        from app.db.session import SessionFactory
+        from app.models.rag_vector import RagVector
+
+        async with SessionFactory() as session:
+            await session.execute(select(RagVector.id).limit(1))
+        return True
+    except Exception as exc:  # noqa: BLE001 - readiness must not raise
+        _logger.warning("Postgres vector store readiness check failed: %s", exc)
+        return False
+
+
 __all__ = [
     "VectorHit",
     "VectorStore",
     "ChromaVectorStore",
     "get_vector_store",
     "check_chroma",
+    "check_vector_store",
 ]

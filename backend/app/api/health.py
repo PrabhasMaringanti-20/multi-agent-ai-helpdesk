@@ -2,9 +2,10 @@
 
 - ``GET /health`` / ``GET /health/live``: liveness (process is up).
 - ``GET /health/ready``: readiness -> 200 when all dependencies are reachable,
-  else 503. Checks PostgreSQL, Redis, ChromaDB, the Celery broker, and whether
-  the active LLM provider is configured. Check callables are module attributes
-  so tests can patch them without live backends.
+  else 503. Checks PostgreSQL, Redis, the configured vector store backend
+  (Postgres by default, or Chroma if VECTOR_STORE_BACKEND=chroma), the Celery
+  broker, and whether the active LLM provider is configured. Check callables
+  are module attributes so tests can patch them without live backends.
 """
 
 from __future__ import annotations
@@ -18,7 +19,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import get_settings
 from app.core.redis import check_redis
 from app.db.session import check_database
-from app.rag.vectorstore import check_chroma
+from app.rag.vectorstore import check_vector_store
 from app.workers.queue import check_celery
 
 router = APIRouter(tags=["system"])
@@ -60,14 +61,14 @@ async def live() -> dict[str, Any]:
 
 @router.get("/health/ready", summary="Readiness probe (dependencies reachable)")
 async def ready() -> Any:
-    database, redis_ok, chroma = await asyncio.gather(
-        check_database(), check_redis(), check_chroma()
+    database, redis_ok, vector_store_ok = await asyncio.gather(
+        check_database(), check_redis(), check_vector_store()
     )
     celery_ok = await asyncio.to_thread(check_celery)
     checks = {
         "database": database,
         "redis": redis_ok,
-        "chroma": chroma,
+        "vector_store": vector_store_ok,
         "celery": celery_ok,
         "providers": providers_configured(),
     }

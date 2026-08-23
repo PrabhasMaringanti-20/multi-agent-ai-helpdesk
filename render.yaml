@@ -57,9 +57,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
       - key: LLM_PROVIDER
-        value: fake
+        value: gemini
       - key: EMBEDDING_PROVIDER
-        value: fake
+        value: gemini
       - key: CORS_ORIGINS
         value: "*"
       - key: APP_ENV
